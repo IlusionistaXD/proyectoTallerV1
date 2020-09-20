@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="shortcut icon" href="/css/favicon.ico" type="image/x-icon" />
+    <title>Listado Personal en BD</title>
+    <!--CARGANDO BOOTSTRAP-->
+    <link rel="stylesheet" href="/css/bootstrap.min.css">
+
+</head>
+<body>
+    <nav>
+        <nav class="navbar navbar-dark bg-dark">
+            <a href="/personas" class="navbar-brand">Datos del Personal</a>
+            <a href="/modelo" class="navbar-brand">Modelo ML</a>
+            <a href="/entradas" class="navbar-brand">Entradas</a>
+        </nav>
+    </nav> 
+
+<!--BODY/////////////////////////////////////////////-->
+<div class="container">
+    <div class="row mt-5">
+        <div class="col-md-7">
+            <table class="table table-bordered table-hoover">
+               <thead>
+                <tr>
+                   <th>ID</th>
+                   <th>Nombre</th>
+                   <th>Direccion</th>
+                   <th>Telefono</th>
+                   <th>Acccion</th>
+                </tr>
+               </thead>
+               
+               <tbody>
+                <% console.log('Hay un total de ' + data.length + ' usuarios') %>
+                <% if (data) { %>
+                    <% for (let i = 0; i < data.length; i=i+1) { %>
+                        <tr>
+                            <td> <%= data[i].id %> </td>
+                            <td> <%= data[i].name %> </td>
+                            <td> <%= data[i].address %> </td>
+                            <td> <%= data[i].phone %> </td>
+                            <td>
+                                <a href="/delete/<%= data[i].id %>" class="btn btn-danger">Eliminar</a>
+                            </td>
+                        </tr>
+                    <% } %>
+                <% } %>
+               </tbody>
+            </table>
+               
+        </div>
+        <div class="col-md-5">
+
+            <div class="card">
+                <div class="card-body">
+                    
+                    <form action="/add" method="post">
+                        <div class="form-group">
+                            <input type="text" name="id" placeholder="ID" class="form-control" id="new">
+                        </div>
+                        <div class="form-group">
+                            <input type="text" name="name" placeholder="Nombre" class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <input type="text" name="address" placeholder="Direccion" class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <input type="text" name="phone" placeholder="Telefono" class="form-control">
+                        </div>
+                        <button id="load" type="button" class="btn btn-danger">
+                            Tomar Fotos
+                        </button>
+                        <button type="submit" id="boton" class="btn btn-primary">
+                            Guardar Usuario
+                        </button>
+                    </form>
+                   
+                </div>
+            </div>
+
+            
+        </div>
+    </div>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+const socket = io();
+let cargadoFotos = false;
+let cargar = document.getElementById('load');
+let boton = document.getElementById('boton');
+
+//boton.style.display = 'none';
+
+cargar.addEventListener('click', ()=>{
+	if (cargadoFotos == false){
+		const send = document.getElementById('new').value;
+		console.log(document.getElementById('new').value);
+		socket.emit('obtenerDataset', {
+			FotoID: send
+		});
+
+		cargar.style.backgroundColor = 'green';
+		cargadoFotos = true;
+		boton.style.display = null;
+	}
+});
+
+
+
+
+</script>
+
+
+
+
+</body>
+</html>

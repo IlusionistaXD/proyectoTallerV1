@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="shortcut icon" href="/css/favicon.ico" type="image/x-icon" />
+    <title>Registro Personal - Proyecto</title>
+
+    <!--CARGANDO BOOTSTRAP-->
+    <link rel="stylesheet" href="/css/bootstrap.min.css">
+
+    <!--Cargando P5-->
+    <script src="/scripts/p5.js"></script>
+    <script src="/scripts/p5.dom.js"></script>
+    <script src="/scripts/p5.sound.js"></script>
+
+    <!--Cargando ML5-->
+    <script src="https://unpkg.com/ml5@0.4.3/dist/ml5.min.js"></script>
+    
+
+</head>
+<body>
+    <nav>
+        <nav class="navbar navbar-dark bg-dark">
+            <a href="/personas" class="navbar-brand">Datos del Personal</a>
+            <a href="/modelo" class="navbar-brand">Modelo ML</a>
+            <a href="/entradas" class="navbar-brand">Entradas</a>
+        </nav>
+    </nav> 
+
+    <div class="container">
+        <div class="row mt-5">
+            <div class="col-md-7">
+                <table class="table table-bordered table-hoover">
+                   <thead>
+                    <tr>
+                       <th>N°</th>
+                       <th>ID</th>
+                       <th>Nombre</th>
+                       <th>Dia</th>
+                       <th>Hora</th>
+                    </tr>
+                   </thead>
+                   
+                   <tbody>
+                    <% console.log('Hay un total de ' + personas.length + ' de Usuarios') %>
+                    <% console.log('Hay un total de ' + data.length + ' de Registros') %>
+                    <% if (data) { %>
+                        <% for (let i = 0; i < data.length; i=i+1) { %>
+                            <tr>
+                                <td> <%= (i+1) %> </td>
+                                <td> <%= data[i].id %> </td>
+                                <td> <%= data[i].name %> </td>
+                                <td> <%= moment(data[i].date_time).format('LL'); %> </td>
+                                <td> <%= moment(data[i].date_time).format('LTS'); %> </td>
+
+                            </tr>
+                        <% } %>
+                    <% } %>
+
+                    <% var vectorData = [] %>
+                    <% if (data) { %>
+                        <% for (let i = 0; i < personas.length; i=i+1) { %>
+                            <% vectorData.push(personas[i].id);%>  
+                        <% } %>
+                        <% } %>
+                    <% console.log(vectorData);%>
+
+                   </tbody>
+                </table> 
+            </div>
+
+            <div class="col-md-3">
+    
+                <div class="card">
+                    <div class="card-body">
+                        
+                        <form action="/addlogin" method="post">
+                            <div class="form-group">
+                                <input type="number" name="id" placeholder="ID" class="form-control" id="new">
+                            </div>
+
+                            <button id="take" type="button" class="btn btn-danger">Tomar Fotos</button>
+                            <button id="send" type="button" class="btn btn-warning">Recibir Resultado</button>
+                            
+                            <button type="submit" class="btn btn-primary">
+                                Registrar Entrada
+                            </button>
+                        </form>
+                    </div>
+                </div>
+    
+                
+    
+            </div>
+    
+        </div>
+    </div>
+
+</body>
+<script src="/socket.io/socket.io.js"></script>
+<script>
+const socket = io();
+let mobilenet;
+let classifier;
+let video;
+
+let tomarFotos = document.getElementById('take');
+let recibirResultados = document.getElementById('send');
+
+let cantidad = <%= personas.length %>;
+console.log('Hay un total de ' + cantidad + " personas en la base de datos");
+
+let databaseCustomers = [<%= vectorData%>];
+console.log(databaseCustomers);
+
+let nroPersona = document.getElementById('new');
+
+
+
+
+
+
+tomarFotos.addEventListener('click', ()=>{
+    let i=0;
+    let busca=true;
+    while (i<databaseCustomers.length && busca==true){
+        if (parseInt(databaseCustomers[i])==parseInt(nroPersona.value)){
+            busca=false;
+            console.log('numero encontrado!!!!!!!');
+        }
+        i=i+1;
+    }
+
+    if (busca==false){
+        console.log('Empezando a tomar fotos');
+        socket.emit('obtenerFotosRegistro', {
+			nameM: 'muestra'
+		});
+    }else{
+        console.log('No Existe el Registro en la Base de Datos!');
+    }
+
+});
+
+recibirResultados.addEventListener('click', ()=>{
+
+    let i=0;
+    let busca=true;
+    while (i<databaseCustomers.length && busca==true){
+        if (parseInt(databaseCustomers[i])==parseInt(nroPersona.value)){
+            busca=false;
+            console.log('numero encontrado!!!!!!!');
+        }
+        i=i+1;
+    }
+
+    if (busca==false){
+        let nameAux = "/images/8969130_25.jpg";
+        ResultOnlyImg(nameAux);
+    }else{
+        console.log('No Existe el Registro en la Base de Datos!');
+    }
+});
+
+function PruebasMuestras(){
+    console.log('Determine los resultados las 5 imagenes');
+};
+
+
+socket.on('obtenerResultado', ()=>{
+    PruebasMuestras();
+});
+
+function setup() {
+	const options = { numLabels: 10 };
+	mobilenet = ml5.featureExtractor('MobileNet',  modelReady);	
+    classifier = mobilenet.classification(options, videoReady);
+}
+
+function modelReady(){
+	console.log('El modelo esta listo!');
+	mobilenet.load("/models/model.json", customModelReady);
+}
+
+function customModelReady(){
+	console.log('Se ha cargado el modelo!');
+}
+
+function videoReady (){
+	console.log('El video esta listo!');
+}
+
+function ResultOnlyImg(linkImg){
+    let imgR = document.createElement('img');
+	imgR.src = linkImg;
+	console.log('Se creo el elemento imagen para cargar');
+	imgR.onload = function () {
+	classifier.classify(imgR, (error, results)=>{
+		if (error){
+			console.error(error);
+		}else{
+            console.log(results);
+		}
+	});
+	}
+}
+
+
+</script>
+
+
+
+</html>

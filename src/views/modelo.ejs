@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="shortcut icon" href="/css/favicon.ico" type="image/x-icon" />
+    <title>Modelo Machine Learning</title>
+
+    <!--CARGANDO BOOTSTRAP-->
+    <link rel="stylesheet" href="/css/bootstrap.min.css">
+
+     <!--Cargando P5-->
+    <script src="/scripts/p5.js"></script>
+    <script src="/scripts/p5.dom.js"></script>
+    <script src="/scripts/p5.sound.js"></script>
+
+    <!--Cargando ML5-->
+    <script src="https://unpkg.com/ml5@0.4.3/dist/ml5.min.js"></script>
+    
+
+</head>
+<body>
+    <nav>
+        <nav class="navbar navbar-dark bg-dark">
+            <a href="/personas" class="navbar-brand">Datos del Personal</a>
+            <a href="/modelo" class="navbar-brand">Modelo ML</a>
+            <a href="/entradas" class="navbar-brand">Entradas</a>
+        </nav>
+    </nav> 
+
+    <% console.log('Hay un total de ' + data.length + ' usuarios alv') %>
+    <% var vectorData = [] %>
+                <% if (data) { %>
+                    <% for (let i = 0; i < data.length; i=i+1) { %>
+                        <% vectorData.push(data[i].id);%>  
+                    <% } %>
+                <% } %>
+    <% console.log(vectorData);%>
+
+    
+</body>
+
+
+<script src="/socket.io/socket.io.js"></script>
+
+<script>
+const socket = io();
+let mobilenet;
+let classifier;
+let video;
+
+let img6;
+let pathImg = "/images/";
+
+let iFoto;
+
+let cantidad = <%= data.length %>;
+console.log('Hay un total de ' + cantidad + " personas en la base de datos");
+
+let databaseCustomers = [<%= vectorData%>];
+console.log(databaseCustomers);
+
+let trainButton;
+let saveButton;
+let allButton;
+let updateButton;
+
+//este boton es temporal
+let classifyImg;
+let input;
+
+function modelReady(){
+	console.log('El modelo esta listo!');
+}
+
+function customModelReady(){
+	console.log('Se ha cargado el modelo!');
+}
+
+function videoReady (){
+	console.log('El video esta listo!');
+}
+
+function imageReady (){
+	console.log('La imagen cargada con exito!');
+
+}
+
+function imageReadyOnModel (){
+	console.log('La imagen fue subida al modelo con exito!');
+}
+
+
+function whileTraining (loss){
+	if(loss == null){
+		console.log('El entrenamineto esta listo!');
+	}else{
+	console.log(loss);
+	}
+}
+
+function gotResults(error, results){
+	if (error){
+		console.error(error);
+	}else{
+		console.log(results);
+		label = results[0].label;
+		classifier.classify(gotResults);
+	}
+}
+
+function setup() {
+	canvasP = createCanvas(320, 240);
+    canvasP.position(windowWidth/2-160, 120);
+	video = createCapture(VIDEO);
+	video.hide();
+	background(0);
+	
+
+	mobilenet = ml5.featureExtractor('MobileNet',  modelReady);
+	const options = { numLabels: cantidad };
+	classifier = mobilenet.classification(video, options, videoReady);
+	
+	//input temporal
+	input = createInput();
+	
+
+
+    
+    allButton = createButton('1.Cargar Datos');
+    allButton.mousePressed(()=>{
+
+        console.log('Empezando a subir todas las imagenes');
+		let name;
+		let path;
+		let iFoto;
+        if (cantidad >= 1){
+            for (let i = 0; i < cantidad; i=i+1) {
+                path = "/images/"+databaseCustomers[i]+"/"+databaseCustomers[i] + "_";
+            	name = databaseCustomers[i];
+				iFoto=1;
+                while (iFoto<=40){
+                    let patInd = path + iFoto + ".jpg";
+                    
+
+                    loadImage(patInd, name)
+						.then(img => {classifier.addImage(img, img.alt);
+										console.log(img.src + "/" + img.alt);
+						})
+						.catch(error => console.error(error));
+
+
+				iFoto = iFoto +1;
+                }
+            }
+        }
+
+	});
+
+	trainButton = createButton('2.Entrenar Datos');
+	trainButton.mousePressed(()=>{
+		classifier.train(whileTraining);
+	});
+		
+	saveButton = createButton('3.Guardar Modelo');
+	saveButton.mousePressed(()=>{
+		classifier.save();
+	});
+
+	updateButton = createButton('4.Actualizar Modelo');
+	updateButton.mousePressed(()=>{
+		socket.emit('reemplazar', {
+			nameM: 'muestra'
+		});
+    });
+
+
+
+	function loadImage(url, nameF){
+		return new Promise((resolve, reject) => {
+		let img = new Image();
+		img.alt = nameF;
+		img.addEventListener('load', e => resolve(img));
+		img.addEventListener('error', () => {
+			reject(new Error(`Failed to load image's URL: ${url}`));
+		});
+		img.src = url;
+		});
+  	}
+
+	classifyImg = createButton('Prueba Imagen');
+	classifyImg.mousePressed(()=>{
+		nameFoto = input.value();
+		img6 = document.createElement('img');
+		img6.src = pathImg + nameFoto;
+		img6.onload = function () {
+		classifier.classify(img6, (error, results)=>{
+			if (error){
+				console.error(error);
+			}else{
+				console.log(results);
+			}
+		});
+		}
+		console.log(nameFoto);
+		input.value('');
+	});
+
+	
+
+}
+
+function draw(){
+	background(0);
+	image(video, 0, 0, 320, 240);
+	fill(255);
+
+}
+
+</script>
+
+</html>
