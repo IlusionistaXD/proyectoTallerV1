@@ -29,15 +29,15 @@ npm start
 
 ## Indicaciones 
 
-# Vista interfaz para Agregar o Eliminar Usuarios Comunes
+## Vista interfaz para Agregar o Eliminar Usuarios Comunes
 
 ![](ss/datos.png)
 
-# Vista interfaz para Actualizar el Modelo de Reconocimiento
+## Vista interfaz para Actualizar el Modelo de Reconocimiento
 
 ![](ss/modelo.png)
 
-# Vista de interfaz para registro de las entradas
+## Vista de interfaz para registro de las entradas
 
 ![](ss/entradas.png)
 
